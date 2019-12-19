@@ -128,7 +128,7 @@ class BashKernel(Kernel):
 
 
     def do_execute(self, code, silent, store_history=True,
-                   user_expressions=None, allow_stdin=False):
+                   user_expressions=None, allow_stdin=False, restart_bash=True):
         self.silent = silent
         if not code.strip():
             return {'status': 'ok', 'execution_count': self.execution_count,
@@ -148,9 +148,10 @@ class BashKernel(Kernel):
             output = self.bashwrapper.child.before
             self.process_output(output)
         except EOF:
-            output = self.bashwrapper.child.before + 'Restarting Bash'
-            self._start_bash()
-            self.process_output(output)
+            if restart_bash :
+              output = self.bashwrapper.child.before + 'Restarting Bash'
+              self._start_bash()
+              self.process_output(output)
 
         if interrupted:
             return {'status': 'abort', 'execution_count': self.execution_count}
@@ -212,3 +213,7 @@ class BashKernel(Kernel):
         return {'matches': sorted(matches), 'cursor_start': start,
                 'cursor_end': cursor_pos, 'metadata': dict(),
                 'status': 'ok'}
+
+    def do_shutdown(self, restart):
+        self.do_execute("exit", True, restart_bash=False)
+        super().do_shutdown(restart)
